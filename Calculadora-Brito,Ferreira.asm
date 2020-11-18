@@ -1,0 +1,20 @@
+.include "macros.asm"
+.data
+#SECCIÓN DE DATOS EN MEMORIA
+
+
+
+
+
+
+
+.text
+#SECCIÓN DE CÓDIGO MAIN
+
+	li $t0, 0 	#OPCIÓN SELECCIONADA DEL MENÚ DE OPERACIONES
+	li $t1, 0		#PRIMER NÚMERO
+	li $t2, 0		#SEGUNDO NÚMERO
+	li $t3, 0		#RESULTADO
+
+
+	fin 	#MACRO QUE FINALIZA EL PROGRAMA
