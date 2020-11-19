@@ -42,7 +42,7 @@ clean_numero:
 		bgez $s0, clean_numero	#RECORRER COMPLETO EL ESPACIO DE MEMORIA
 	.end_macro 
 	
-#MACRO PARA QUITAR EL SIGNO DEL NUMERO EN MEMORIA
+#MACRO PARA QUITAR EL SIGNO DEL NUMERO EN MEMORIA (SHIFT A LA IZQUIERDA DEL NUMERO)
 .macro quitar_signo (%direccion, %tamaño)
 li $s1, 1 	#APUNTADOR POSICION SIGUIENTE
 li $s2, 0 	#APUNTADOR POSICION ACTUAL
@@ -113,4 +113,59 @@ fin_numero:
 		quitar_signo (%direccion_numero, $s0)		#SHIFT A LA IZQUIERDA PARA QUITAR EL SIGNO DEL STRING
 	.end_macro 
 	
+.macro sumar(%numero1, %numero2, %resultado)
+
+	li $s0, 0		#REGISTRO QUE ALMACENA EL ACARREO DE LA SUMA
+																									
+	move $s1, $a1	#TAMAÑO DEL NUMERO
 	
+loopsuma:			
+	lb   $t1,%numero1($s1)	#AGARRAR EL ULTIMO DIGITO DEL NUMERO 1	
+	lb   $t2, %numero2($s1)	#AGARRAR EL ULTIMO DIGITO DEL NUMERO 2
+			
+	add  $t3,$t2,$t1		#SUMA LOS DOS NUMEROS		
+	add  $t3,$t3,$s0		#SUMA EL ACARREO
+				
+	li   $s0,0		#REINICIA EL ACARREO
+	bge  $t3,10,acarreo		#SI $t3 ES MAYOR A 10 ENTONCES EL NUMERO TIENE ACARREO
+				
+loopsuma2:			
+	ori  $t3,$t3,0x30		#CONVERTIR LO QUE QUEDO EN $t3 A ASCII
+	sb   $t3, %resultado($s1)	#GUARDAR EL DIGITO DEL RESULTADO
+				
+loopsuma3:			
+	subi $s1, $s1,1		#SE MUEVE EL APUNTADOR AL NUMERO DE LA IZQUIERDA
+			
+	bgez $s1, loopsuma		#MIENTRAS EL APUNTADOR SEA MAYOR A 0 SEGUIR SUMANDO
+	
+bnez $s0, acarreo_final		#SI QUEDA ACARREO CUANDO SE TERMINAN DE SUMAR LOS DOS NUMEROS ENTONCES HAY QUE METER EL ACARREO EN EL NUMERO
+acarreo_final:
+	meter_acarreo_final	
+b final
+#PARTE DE CODIGO QUE MANEJA EL ACARREO
+acarreo:			
+	subi $t3,$t3,10	#SE LE QUITA 10 A $t3 PORQUE NINGUN ACARREO LLEGA A 20
+	li $s0,1		#SE PONE EL ACARREO EN 1
+	b loopsuma2	#SE SIGUE SUMANDO
+	
+final:
+.end_macro 
+	
+#MACRO PARA METER EL ULTIMO DIGITO DEL ACARREO EN EL NUMERO (SHIFT A LA DERECHA)
+.macro meter_acarreo_final()
+
+addi $s0, $a1, 1		#APUNTADOR AL ESPACIO SIGUIENTE
+move $s1, $a1		#APUNTADOR AL ESPACIO ACTUAL
+li $s2, 0x30		#CERO
+			
+loop_shift:			
+	lb   $t3, resultado($s1)	#GUARDA EN $t3 EL DIGITO ACTUAL
+	sb   $s2, resultado($s1)	#CAMBIA EL DIGITO ACTUAL EN MEMORIA A 0
+	sb   $t1, resultado($s0)	#PONE EL DIGITO ACTUAL EN LA POSICION SIGUIENTE
+	subi $s1, $s1, 1		#LE RESTA 1 AL APUNTADOR ACTUAL
+	subi $s0, $s0, 1		#LE RESTA 1 AL APUNTADOR SIGUIENTE
+	bgez $s1, loop_shift	#REPITE EL SHIFT HASTA QUE EL APUNTADOR ACTUAL LLEGA AL PRINCIPIO DEL NUMERO
+	
+li   $t3, 0x31		#COMO EL ACARREO NO PUEDE SER MAYOR A 1, EL ACARREO VALE 1
+sb   $t3, resultado($s0)	#GUARDA EL ACARREO DEL PRINCIO (FINAL)
+	.end_macro 

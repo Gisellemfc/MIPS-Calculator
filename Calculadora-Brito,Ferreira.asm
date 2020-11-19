@@ -68,5 +68,54 @@ Insertar_Datos:
 				pedir_string(numero2)
 				validar_numero(numero2, $t5, Insertar_Num2, numero_invalido, $t2)
 				
+#CONDICIONAL DE LOS CASOS	
+beq $t0, 1, suma
+beq $t0, 2, resta
+beq $t0, 3, multiplicacion
+
+#CASOS DE LA SUMA
+suma:
+	#SI LOS DOS NUMEROS SON DEL MISMO SIGNO
+	beq $t4, $t5, hacer_suma
+	hacer_suma:
+		sumar(numero1, numero2, resultado)
+	
+	beq $t5, 0, negativo_suma
+	positivo_suma: mensaje_string(mas)
+	b imprime_suma
+	negativo_suma: mensaje_string(menos)
+	
+	imprime_suma:
+	mensaje_string(resultado)
+	
+	b final
+	
+	#SI LOS DOS NUMEROS SON DE DISTINTO SIGNO
+
+resta:
+	#SI LOS DOS NUMEROS SON DEL MISMO SIGNO
+	
+	#SI LOS DOS NUMEROS SON DE DISTINTO SIGNO
+	bne $t4, $t5, hacer_resta_sumada
+	hacer_resta_sumada:
+		sumar(numero1, numero2, resultado)
+	
+	beq $t4, 0, negativo_resta_sumada
+	positivo_resta_sumada: mensaje_string(mas)
+	b imprime_resta_sumada
+	negativo_resta_sumada: mensaje_string(menos)
+	
+	imprime_resta_sumada:
+	mensaje_string(resultado)
+	
+	b final
+
+multiplicacion:
+
+
+
+final:
+
+
 		
 	fin 	#MACRO QUE FINALIZA EL PROGRAMA
