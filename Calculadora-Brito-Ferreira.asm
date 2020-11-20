@@ -145,9 +145,6 @@ suma:
 				b final
 	
 	
-	
-	
-	
 	hacer_suma_restada:
 	
 	b final
@@ -182,8 +179,38 @@ resta:
 	
 	hacer_resta:
 	
-	b final
+		beqz $t8, num1_mayor_resta
 	
+		#NUMERO 2 ES MAYOR
+		restar(numero2, numero1, resultado, $t6)
+		
+		beqz $t5, imprimir_menos_resta_num2
+		
+				mensaje_string(mas)
+				mensaje_string(resultado)
+				b final
+		
+		imprimir_menos_resta_num2:
+				mensaje_string(menos)
+				mensaje_string(resultado)
+				b final
+	
+	
+		num1_mayor_resta:
+		
+		#NUMERO 1 ES MAYOR
+		restar(numero1, numero2, resultado, $t6)
+		
+		beqz $t4, imprimir_menos_resta_num1
+		
+				mensaje_string(mas)
+				mensaje_string(resultado)
+				b final
+		
+		imprimir_menos_resta_num1:
+				mensaje_string(menos)
+				mensaje_string(resultado)
+				b final	
 
 	
 	hacer_resta_sumada:

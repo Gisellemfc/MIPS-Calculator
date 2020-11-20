@@ -153,9 +153,15 @@ comparar:
 	and $t1, $t1, 0x000f	
 	lb  $t2, numero2($s0)	#AGARRO EL PRIMER DÍGITO DEL NÚMERO 2
 	and $t2, $t2, 0x000f
-							
+		
+	
 	blt $t1, $t2, numero2_mayor	#SI EL ULTIMO DÍGITO DEL NUMERO 2 ES MAYOR ENTONCES NUMERO 2 ES MÁS GRANDE
 	blt $t2, $t1, numero1_mayor	#SI EL ULTIMO DÍGITO DEL NUMERO 1 ES MAYOR ENTONCES NUMERO 1 ES MÁS GRANDE
+	
+	beq $s0, $t6, numero1_mayor
+	addi $s0, $s0, 1
+	beq $t1, $t2, comparar					
+	
 	
 	
 #PORCIÓN DE CODIGO SI EL NUMERO 1 ES MAYOR
@@ -223,7 +229,63 @@ acarreo:
 	
 final:
 .end_macro 
+
+
+
+#MACRO PARA RESTAR LOS DOS NÚMEROS
+.macro restar(%numero1, %numero2, %resultado, %tamano)
+			
+move $s0, %tamano			#APUNTADOR QUE RECORRE LOS NUMEROS DE ATRÁS PARA ADELANTE	
+li $s1, 0				#GUARDA EL ACARREO DE LA RESTA																					
+																						addi $t0, $a1, 2
+Resta1_Loop:			
+		lb   $t1, %numero1($s0)		#AGARRAMOS EL ÚLTIMO DÍGITO DEL NUMERO 1
+		lb   $t2, %numero2($s0)		#AGARRAMOS EL ÚLTIMO DÍGITO DEL NUMERO 2
+		
+		subi $t1, $t1, 0x30
+		subi $t2, $t2, 0x30
+		
+		bnez $s1, acarreo_resta		#SI HAY ACARREO DE LA RESTA VA AL CÓDIGO QUE MANEJA EL ACARREO
+		
+Resta1_Loop2:	
+		blt  $t1, $t2, sumar_diez		#SI NO HAY ACARREO VERIFICA SI EL DE ARRIBA ES MENOR QUE EL DE ABAJO LE TIENE QUE SUMAR 10
+Resta1_Loop3:				
+		sub  $t3,$t1,$t2			#DESPUES LOS RESTA
+				
+		ori   $t3,$t3,0x30			#LO CONVIERTE A ASCII
+		sb   $t3, %resultado($s0)		#GUARDA EL RESULTADO
+				
+Resta1_Loop4:			
+		subi $s0, $s0, 1			#SE RESTA 1 AL APUNTADOR
+		bgez $s0, Resta1_Loop		#MIENTRAS NO LLEGUE AL FINAL DEL NUMERO SIGUE RESTANDO
+		j final_resta			#SI LLEGA AL FINAL SALTAR
 	
+	
+#PORCIÓN DE CÓDIGO QUE PIDE PRESTADO 10 AL NUMERO DE AL LADO
+sumar_diez:
+		addi $t1, $t1, 10		#SUMA 10 AL NUMERO DE ARRIBA
+		li   $s1, 1		#SUMA 1 AL ACARREO
+		bnez $s0, Resta1_Loop3	#VUELVE A SEGUIR RESTANDO 
+		b final_resta			
+
+#PORCIÓN DE CÓDIGO QUE MANEJA EL ACARREO DE LA RESTA
+acarreo_resta:			
+		beqz $t1, caso_zero		#SI EL NUMERO DE ARRIBA ES 0, ENTONCES SE TIENE QUE CONVERTIR EN UN 9
+		subi $t1, $t1, 1		#SI EL ANTERIOR PIDIÓ PRESTA HAY QUE RESTARLE 1 AL NUMERO
+		li   $s1, 0		#SE REINICIA EL ACARREO		
+		bgtz $s0, Resta1_Loop2	#SE VUELVE A LA RESTA NORMAL
+		b final_resta
+		
+#PORCION DE CODIGO EN CASO DE QUE EL NUMERO DE ARRIBA SEA 0						
+caso_zero:			
+		li $t1, 9			#SE CONVIERTE EL DIGITO DE ARRIBA EN 9
+		bnez $s0, Resta1_Loop2	#SE SIGUE RESTANDO
+		b final_resta
+				
+
+final_resta:
+.end_macro 
+
 	
 	
 #MACRO PARA METER EL ULTIMO DIGITO DEL ACARREO EN EL NUMERO (SHIFT A LA DERECHA DEL NUMERO)
@@ -242,6 +304,7 @@ loop_shift:
 	bgez $s1, loop_shift	#REPITE EL SHIFT HASTA QUE EL APUNTADOR ACTUAL LLEGA AL PRINCIPIO DEL NUMERO
 
 .end_macro 
+
 
 
 #MACRO PARA QUITAR EL SIGNO DEL NUMERO EN MEMORIA (SHIFT A LA IZQUIERDA DEL NUMERO)
