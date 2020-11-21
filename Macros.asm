@@ -288,6 +288,130 @@ final_resta:
 
 	
 	
+#MACRO PARA HACER LA MULTIPLICACIÓN 
+.macro multiplicar(%numero1, %numero2, %resultado, %tamano1, %tamano2)
+				
+move $s0, %tamano1 			#APUNTADOR QUE RECORRE EL PRIMER NUMERO	 $t7	
+move $s1, %tamano2			#APUNTADOR QUE RECORRE EL SEGUNDO NUMERO $t8
+				
+li $s2, 1				#BANDERA PARA CORRER EL NUMERO AL MULTIPLICAR $s0
+
+
+#LOOP PARA MULTIPLICAR
+loop_mul:				
+		bnez $s2, no_hacer_shift	#SI LA BANDERA ES 0 ENTONCES HACER SHIFT
+		
+	hacer_shift:
+		jal shift_resultado		#SHIFT A LA DERECHA DEL RESULTADO
+
+	no_hacer_shift:
+	loop_mul1:		
+		li $s2, 0				#REINICIAR LA BANDERA PARA CORRE EL NUMERO
+		lb  $t1, %numero1($s0)		#CARGO UN DIGITO DE NUMERO 1	
+		and $t1,$t1,0x00f			#SE PASA A DECIMAL
+		
+	
+	#LOOP QUE MULTIPLICA TODO EL NUMERO 1 POR EL DIGITO DEL NUMERO 2		
+	loop_digito:		
+		lb  $t2, %numero2($s1)		#AGARRO UN DIGITO DE MUMERO 2
+		and $t2,$t2,0x00f			#LO PASO A DECIMAL
+		mul   $t3, $t1, $t2			#MULTIPLICO LOS DIGITOS
+		add   $t3, $t3, $s6		  	#LE SUMO EL ACARREO ANTERIOR DE LA MULTIPLICACION
+		li $s6, 0				#REINICIO EL ACARREO ($t5)
+		bge   $t3, 10, acarreo_mult		#SI EL RESULTADO ES MAYOR A 10 TENGO ACARREO PARA EL SIGUIENTE
+		
+		loop_m2:			
+			lb  $s7, %resultado($s1)		#$t6	AGARRO EL DÍGITO DE RESULTADO QUE ESTA EN LA POSICION A SUMAR	
+			and $s7,$s7,0x00f			#SE PASA A DECIMAL
+			add $t3, $t3, $s7			#SE SUMA EL RESULTADO ACTUAL CON LO QUE LLEVABA ANTES
+			add $t3, $t3, $t9			#SE SUMA EL ACARREO DE LA SUMA SI HAY ($T4)
+			li  $t9, 0			#SE REINICIA EL ACARREO DE LA SUMA
+			bge $t3, 10, acarreo_final		#SI $T3 ES MAYOR A 10 ENTONCES TIENE ACARREO LA SUMA
+				
+		loop_m3:			
+			ori $t3,$t3,0x30			#PASAR EL DIGITO A ASCII
+			sb $t3, %resultado($s1)		#GUARDAR EL RESULTADO	
+			
+			subi $s1,$s1,1			#QUITO UNO AL APUNTADOR DEL NUMERO 2
+			bgez $s1, loop_digito		#SE RECORRES HASTA QUE SE TERMINA DE MULTIPLICAR EL DIGITO POR TODO EL NUMERO 2
+			bnez $s6, add_ultimo_digito		#AL TERMINAR, SI HAY ACARREO DE MULTIPLICACION, SE METE
+				
+	loop_num1:			
+		addi $s1, %tamano2, 1		#COMO HUBO ACARREO EL NUMERO AHORA TIENE +1 DE TAMAÑO
+		subi  $s0, $s0,1			#QUITAR UNO AL APUNTADOR DEL NUMERO 1
+		bgez $s0, loop_mul			#SEGUIR RECORRIENDO LA MULTIPLICACION
+		b revisar_ceros
+	
+
+#PORCION DE CODIGO PARA METER EL ACARREO DE LA MULTIPLICACION AL FINAL			
+add_ultimo_digito:		
+		li $s2, 1
+		add $s6, $s6, $t9
+		jal shift_resultado
+		bge $s6, 10, otro_mas
+		b add_final
+		
+		otro_mas:	
+			subi $s6, $s6, 10
+			or $t3, $s6, 0x30
+			sb $t3, %resultado($zero)
+			li $s6, 0
+			jal shift_resultado
+			li $t3, 0x31
+			sb $t3, %resultado($zero)
+			j loop_num1
+			
+		add_final:	
+			or $t3, $s6, 0x30
+			sb $t3, %resultado($zero)
+			li $s6, 0
+			j loop_num1
+
+#SHIFT A LA DERECHA DE RESULTADO
+shift_resultado:		
+		add  $s3, %tamano1, %tamano2		#$T0 APUNTADOR POSICIÓN ACTUAL (TAMAÑO MÁX DE LA MULTIPLICACIÓN)
+		addi $s4, $s3, 1			#APUNTADOR A POSICIÓN SIGUIENTE $T4	
+		li   $s5, 0x30			#CERO EN ASCII	
+loop_shift_mul:	
+		lb   $t3, %resultado($s3)		#SE TOMA EL NUMERO DE LA POSICION ACTUAL		
+		sb   $s5, %resultado($s3)		#SE PONE CERO EN LA POSICION ACTUAL
+		sb   $t3, %resultado($s4)		#SE MUEVE EL NUMERO ACTUAL A LA POSICION SIGUIENTE
+		subi $s3, $s3, 1			#SE QUITA 1 AL APUNTADOR
+		subi $s4, $s4, 1			#SE QUITA 1 AL APUNTADOR
+		bgez $s3, loop_shift_mul		#SE REPITE HASTA LLEGAR AL INICIO DEL NUMERO
+		li   $s4, 0			#SE LIMPIA $S4
+		jr   $ra				#SEGUIR EN DONDE ESTABA
+			
+			
+#PORCIÓN DE CODIGO QUE MANEJA EL ACARREO DE LA MULTIPLICACION
+acarreo_mult:			div $s6, $t3, 10		# DIVIDO ENTRE 10 (35 / 10 = 3 EN LO)
+				mfhi $t3			# DEJO EL RESIDUO EN T3 (35 / 10 --> 5 EN HI)
+				j loop_m2			#VUELVO A SEGUIR MULTIPLICANDO
+				
+				
+#PORCION DE CODIGO QUE MANEJA EL ACARREO DE LA SUMA		
+acarreo_final:			subi $t3, $t3, 10		#LE QUITA 10 A $T3
+				li $t9, 1			#SE PONE 1 EN EL ACARREO
+				j loop_m3			#VOLVER A MULTIPLICAR
+	
+																									
+revisar_ceros:
+
+	lb  $t3, %resultado($zero)
+	beq $t3, 0x30, quitar_cero
+	b final_multiplicacion
+
+quitar_cero:	
+	add  $s3, %tamano1, %tamano2
+	shift_izquierda(%resultado, $s3)
+	lb  $t3, %resultado($zero)
+	beq $t3, 0x30, quitar_cero
+
+final_multiplicacion:
+.end_macro
+	
+	
+	
 #MACRO PARA METER EL ULTIMO DIGITO DEL ACARREO EN EL NUMERO (SHIFT A LA DERECHA DEL NUMERO)
 .macro shift_derecha(%direccion, %tamano)
 

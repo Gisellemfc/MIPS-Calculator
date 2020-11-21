@@ -147,8 +147,38 @@ suma:
 	
 	hacer_suma_restada:
 	
-	b final
-
+		beqz $t8, num1_mayor_suma_restada
+	
+		#NUMERO 2 ES MAYOR
+		restar(numero2, numero1, resultado, $t6)
+		
+		beqz $t5, imprimir_menos_suma_restada_num2
+		
+				mensaje_string(mas)
+				mensaje_string(resultado)
+				b final
+		
+		imprimir_menos_suma_restada_num2:
+				mensaje_string(menos)
+				mensaje_string(resultado)
+				b final
+	
+	
+		num1_mayor_suma_restada:
+		
+		#NUMERO 1 ES MAYOR
+		restar(numero1, numero2, resultado, $t6)
+		
+		beqz $t4, imprimir_menos_suma_restada_num1
+		
+				mensaje_string(mas)
+				mensaje_string(resultado)
+				b final
+		
+		imprimir_menos_suma_restada_num1:
+				mensaje_string(menos)
+				mensaje_string(resultado)
+				b final	
 
 #CASOS DE LA RESTA
 resta:
@@ -245,6 +275,33 @@ resta:
 #CASOS DE LA MULTIPLICACION
 multiplicacion:
 
+	calcular_mayor
+	igualar_tamano(numero1, numero2, $t6, $t7)
+	
+	beqz $t8, num1_mayor_multiplicacion
+	
+		multiplicar(numero2, numero1, resultado, $t7, $t6)
+		b signo_m
+	
+	num1_mayor_multiplicacion:
+	
+		multiplicar(numero1, numero2, resultado, $t6, $t7)
+		b signo_m
+	
+	
+	signo_m:
+		bne $t4, $t5, menos_multi
+		
+			mensaje_string(mas)
+			b final_m
+		
+		menos_multi:
+			mensaje_string(menos)
+			b final_m
+			
+	final_m:
+		mensaje_string(resultado)
+		
 
 #SALTO AL FINALIZAR LA OPERACIÓN
 final:
