@@ -19,7 +19,69 @@
 	syscall
 .end_macro 
 
+
+
+#MACRO PARA IMPRIMIR LOS DATOS DE LA OPERACION
+.macro imprimir_datos()
+
+		mensaje_string(num1)
+		beq $t4, 1, imp_mas_num1
+			
+			mensaje_string(menos)
+			mensaje_string(numero1)
+			b imprimir_operacion
 		
+		imp_mas_num1:
+
+			mensaje_string(mas)
+			mensaje_string(numero1)
+			b imprimir_operacion
+
+imprimir_operacion:
+		
+		beq $t0, 1, imp_signo_suma
+		beq $t0, 2, imp_signo_resta
+		
+				mensaje_string(por)
+				b imprimir_numero2
+		
+		imp_signo_suma:
+		
+				mensaje_string(mas)
+				b imprimir_numero2
+		
+		imp_signo_resta:
+		
+				mensaje_string(menos)
+				b imprimir_numero2
+		
+imprimir_numero2:
+
+		mensaje_string(num2)
+		beq $t5, 1, imp_mas_num2
+			
+			mensaje_string(menos)
+			mensaje_string(numero2)
+			b casos
+		
+		imp_mas_num2:
+
+			mensaje_string(mas)
+			mensaje_string(numero2)
+			b casos
+			
+.end_macro 
+
+#MACRO QUE IMPRIME EL RESULTADO DE LA OPERACION
+.macro imprimir_resultado (%signo, %resultado, %res)
+
+	mensaje_string(%res)
+	mensaje_string(%signo)
+	mensaje_string(%resultado)
+	
+.end_macro 
+
+			
 	
 #MACRO QUE PIDE UN ENTERO
 .macro pedir_entero (%registro)
@@ -46,10 +108,10 @@
 li $s1, 0x00		#ASIGNA NULL A $S1
 
 #LOOP PARA VACIAR EL ESPACIO DE MEMORIA
-clean_numero: 	 			
+clean_num: 	 			
 		sb $s1, %direccion(%tamano)		#METE NULL EN LA POSICION DEL DIGITO
 		subi %tamano, %tamano, 1		#RETROCEDER UNA POSICION AL APUNTADOR
-		bgez %tamano, clean_numero		#RECORRER EL ESPACIO DE MEMORIA HASTA EL INICIO
+		bge %tamano, 0, clean_num		#RECORRER EL ESPACIO DE MEMORIA HASTA EL INICIO
 .end_macro 
 	
 	
@@ -273,7 +335,7 @@ acarreo_resta:
 		beqz $t1, caso_zero		#SI EL NUMERO DE ARRIBA ES 0, ENTONCES SE TIENE QUE CONVERTIR EN UN 9
 		subi $t1, $t1, 1		#SI EL ANTERIOR PIDIÓ PRESTA HAY QUE RESTARLE 1 AL NUMERO
 		li   $s1, 0		#SE REINICIA EL ACARREO		
-		bgtz $s0, Resta1_Loop2	#SE VUELVE A LA RESTA NORMAL
+		bgez $s0, Resta1_Loop2	#SE VUELVE A LA RESTA NORMAL
 		b final_resta
 		
 #PORCION DE CODIGO EN CASO DE QUE EL NUMERO DE ARRIBA SEA 0						
@@ -293,8 +355,8 @@ final_resta:
 				
 move $s0, %tamano1 			#APUNTADOR QUE RECORRE EL PRIMER NUMERO	 $t7	
 move $s1, %tamano2			#APUNTADOR QUE RECORRE EL SEGUNDO NUMERO $t8
-				
-li $s2, 1				#BANDERA PARA CORRER EL NUMERO AL MULTIPLICAR $s0
+move $t0, %tamano2				
+li $s2, 0				#BANDERA PARA CORRER EL NUMERO AL MULTIPLICAR $s0
 
 
 #LOOP PARA MULTIPLICAR
@@ -335,9 +397,10 @@ loop_mul:
 			subi $s1,$s1,1			#QUITO UNO AL APUNTADOR DEL NUMERO 2
 			bgez $s1, loop_digito		#SE RECORRES HASTA QUE SE TERMINA DE MULTIPLICAR EL DIGITO POR TODO EL NUMERO 2
 			bnez $s6, add_ultimo_digito		#AL TERMINAR, SI HAY ACARREO DE MULTIPLICACION, SE METE
-				
-	loop_num1:			
-		addi $s1, %tamano2, 1		#COMO HUBO ACARREO EL NUMERO AHORA TIENE +1 DE TAMAÑO
+			bnez $t9, add_ultimo_digito_suma			
+	
+		loop_num1:			
+		move $s1, %tamano2			#COMO HUBO ACARREO EL NUMERO AHORA TIENE +1 DE TAMAÑO
 		subi  $s0, $s0,1			#QUITAR UNO AL APUNTADOR DEL NUMERO 1
 		bgez $s0, loop_mul			#SEGUIR RECORRIENDO LA MULTIPLICACION
 		b revisar_ceros
@@ -345,7 +408,7 @@ loop_mul:
 
 #PORCION DE CODIGO PARA METER EL ACARREO DE LA MULTIPLICACION AL FINAL			
 add_ultimo_digito:		
-		li $s2, 1
+		li $s2, 1				
 		add $s6, $s6, $t9
 		jal shift_resultado
 		bge $s6, 10, otro_mas
@@ -365,7 +428,36 @@ add_ultimo_digito:
 			or $t3, $s6, 0x30
 			sb $t3, %resultado($zero)
 			li $s6, 0
+			li $t9, 0
 			j loop_num1
+
+
+#PORCION DE CODIGO PARA METER EL ACARREO DE LA SUMA AL FINAL			
+add_ultimo_digito_suma:		
+		li $s2, 1	
+		li $s6, 0			
+		add $s6, $s6, $t9
+		jal shift_resultado
+		bge $s6, 10, otro_mas_suma
+		b add_final_suma
+		
+		otro_mas_suma:	
+			subi $s6, $s6, 10
+			or $t3, $s6, 0x30
+			sb $t3, %resultado($zero)
+			li $s6, 0
+			jal shift_resultado
+			li $t3, 0x31
+			sb $t3, %resultado($zero)
+			j loop_num1
+			
+		add_final_suma:	
+			or $t3, $s6, 0x30
+			sb $t3, %resultado($zero)
+			li $t9, 0
+			li $s6, 0
+			j loop_num1
+
 
 #SHIFT A LA DERECHA DE RESULTADO
 shift_resultado:		
